@@ -17,7 +17,7 @@ import java.util.Queue;
 @Component
 public class ChatSocket extends TextWebSocketHandler implements WebSocketConfigurer {
 
-    private List<WebSocketSession> userList = new ArrayList<>();
+    private List<UserModel> userList = new ArrayList<>();
     private Queue<String> lastTenMessages = new ArrayDeque<>();
 
     @Override
@@ -28,7 +28,7 @@ public class ChatSocket extends TextWebSocketHandler implements WebSocketConfigu
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
-        userList.add(session);
+        userList.add(new UserModel(session));
 
         lastTenMessages.forEach(s -> {
             try {
@@ -41,20 +41,44 @@ public class ChatSocket extends TextWebSocketHandler implements WebSocketConfigu
 
     @Override
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) throws Exception {
-        userList.remove(session);
+        userList.remove(userList.stream()
+                .filter(s -> s.getUserSession().getId().equals(session.getId()))
+                .findAny().orElseThrow(IllegalStateException::new));
     }
 
     @Override
     protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
-        addMessageToQue(message.getPayload());
+        UserModel sender = findBySession(session);
 
+        if(message.getPayload().startsWith("nickname:")){
+            if(sender.getNickname() == null){
+                 sender.setNickname(message.getPayload().replace("nickname:", ""));
+            }else{
+                 sender.sendMessage(new TextMessage("Nie możesz zmienić nicku więcej razy!"));
+            }
+            return;
+        }
+
+        if(sender.getNickname() == null){
+            sender.sendMessage(new TextMessage("Najpierw ustal nick!"));
+            return;
+        }
+
+        addMessageToQue(message.getPayload());
         userList.forEach(s -> {
             try {
-                s.sendMessage(new TextMessage(message.getPayload()));
+                s.sendMessage(new TextMessage(sender.getNickname() + ": " + message.getPayload()));
             } catch (IOException e) {
                 e.printStackTrace();
             }
         });
+    }
+
+    private UserModel findBySession(WebSocketSession webSocketSession){
+         return userList.stream()
+                 .filter(s -> s.getUserSession().getId().equals(webSocketSession.getId()))
+                 .findAny()
+                 .orElseThrow(IllegalStateException::new);
     }
 
     private void addMessageToQue(String message){

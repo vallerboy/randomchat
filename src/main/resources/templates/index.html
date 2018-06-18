@@ -17,6 +17,10 @@
         <form onsubmit="sendMessage(); return false;">
             <input type="text" id="messageArea" placeholder="Wpisz wiadomość">
         </form>
+
+        <form onsubmit="sendNickname(); return false;">
+            <input type="text" id="nicknameArea" placeholder="Wpisz nickname">
+        </form>
     </div>
 
     <script type="text/javascript">
@@ -24,6 +28,7 @@
         var infoText = document.getElementById("info");
         var websocket = new WebSocket(websocketLink);
         var textArea = document.getElementById("messageArea");
+        var nicknameArea = document.getElementById("nicknameArea");
         var messagesArea = document.getElementById("messages");
 
 
@@ -39,9 +44,15 @@
         function sendMessage() {
             var text = textArea.value;
             textArea.value = "";
-
             websocket.send(text);
         }
+
+        function sendNickname() {
+            var text = nicknameArea.value;
+            nicknameArea.value = "";
+            websocket.send("nickname:" + text);
+        }
+
     </script>
 </body>
 </html>
