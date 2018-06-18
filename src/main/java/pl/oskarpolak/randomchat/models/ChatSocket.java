@@ -41,15 +41,20 @@ public class ChatSocket extends TextWebSocketHandler implements WebSocketConfigu
 
     @Override
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) throws Exception {
-        userList.remove(userList.stream()
-                .filter(s -> s.getUserSession().getId().equals(session.getId()))
-                .findAny().orElseThrow(IllegalStateException::new));
+        //tak samo usuwanie z listy odbywa sie po UserModel a nie sesji!!!!!
+        userList.remove(findBySession(session));
     }
 
     @Override
     protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
+        //Znajdz usermodel po sesji (on tutaj zawsze musi byc)
+        //Poniewaz zawsze przed metoda handleTextMessegae najpierw musi wykonac sie
+        //metoda afterConnectionEstablished
         UserModel sender = findBySession(session);
 
+        //Jesli prefix wiadomosci rozpoczyna sie od "nickname:"
+        // to znaczy ze ktos chce ustawic nick
+        //Przydaloby sie zrobic sprawdzanie czy nick jest wolny :)
         if(message.getPayload().startsWith("nickname:")){
             if(sender.getNickname() == null){
                  sender.setNickname(message.getPayload().replace("nickname:", ""));
@@ -59,6 +64,7 @@ public class ChatSocket extends TextWebSocketHandler implements WebSocketConfigu
             return;
         }
 
+        //Nie rozsyłaj wiadoomości usera ktory nie ma nicku
         if(sender.getNickname() == null){
             sender.sendMessage(new TextMessage("Najpierw ustal nick!"));
             return;
@@ -74,6 +80,8 @@ public class ChatSocket extends TextWebSocketHandler implements WebSocketConfigu
         });
     }
 
+    //Funkcja szukajaca usera po sesji (pamietamy ze lista jest teraz lista UserModeli a nie sesji)
+    //A w metodach wbudowanych w WebSocket przychodzi tylko sesja
     private UserModel findBySession(WebSocketSession webSocketSession){
          return userList.stream()
                  .filter(s -> s.getUserSession().getId().equals(webSocketSession.getId()))
