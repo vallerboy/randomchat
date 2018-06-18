@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Chat</title>
-    <link rel="stylesheet" type="text/css" th:href="@{/style.css}">
+    <link rel="stylesheet" type="text/css" th:href="@{/main.css}">
 </head>
 <body>
 
@@ -33,6 +33,7 @@
 
         websocket.onmessage = function (ev) {
             messagesArea.innerHTML = messagesArea.innerHTML + "<li>" + ev.data + "</li>";
+            messagesArea.scrollTop = messagesArea.scrollHeight; // automatyczny scroll do dołu
         }
 
         function sendMessage() {
