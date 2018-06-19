@@ -17,7 +17,7 @@ public class KickCommand extends MainCommand {
     @Override
     public boolean executeCommand(UserModel sender, String... args) throws IOException {
         if(args.length < 1) {
-            sender.sendMessage(new TextMessage("Podałeś za mało argumentów" + info()));
+            sender.sendMessage(new TextMessage("Podałeś za mało argumentów " + info()));
             return false;
         }
 
