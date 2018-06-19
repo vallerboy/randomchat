@@ -70,7 +70,7 @@ public class ChatSocket extends TextWebSocketHandler implements WebSocketConfigu
             return;
         }
 
-        addMessageToQue(message.getPayload());
+        addMessageToQue(sender.getNickname() + ": " + message.getPayload());
         userList.forEach(s -> {
             try {
                 s.sendMessage(new TextMessage(sender.getNickname() + ": " + message.getPayload()));
