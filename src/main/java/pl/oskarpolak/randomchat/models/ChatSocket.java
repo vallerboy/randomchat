@@ -1,6 +1,7 @@
 package pl.oskarpolak.randomchat.models;
 
 import org.apache.catalina.User;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
@@ -8,18 +9,20 @@ import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.config.annotation.WebSocketConfigurer;
 import org.springframework.web.socket.config.annotation.WebSocketHandlerRegistry;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
+import pl.oskarpolak.randomchat.models.commands.KickCommand;
+import pl.oskarpolak.randomchat.models.commands.MainCommand;
+import pl.oskarpolak.randomchat.models.services.UserListService;
 
 import java.io.IOException;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Queue;
+import java.util.*;
 
 @Component
 public class ChatSocket extends TextWebSocketHandler implements WebSocketConfigurer {
 
-    private List<UserModel> userList = new ArrayList<>();
     private Queue<String> lastTenMessages = new ArrayDeque<>();
+
+    @Autowired
+    UserListService userListService;
 
     @Override
     public void registerWebSocketHandlers(WebSocketHandlerRegistry webSocketHandlerRegistry) {
@@ -29,7 +32,7 @@ public class ChatSocket extends TextWebSocketHandler implements WebSocketConfigu
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
-        userList.add(new UserModel(session));
+        userListService.addUser(new UserModel(session));
 
         lastTenMessages.forEach(s -> {
             try {
@@ -47,7 +50,7 @@ public class ChatSocket extends TextWebSocketHandler implements WebSocketConfigu
         UserModel userWhoIsExiting = findBySession(session);
 
         sendMessageToAllWithoutSender(userWhoIsExiting.getNickname() + ", odchodzi z czatu!", userWhoIsExiting);
-        userList.remove(userWhoIsExiting);
+        userListService.removeUser(userWhoIsExiting);
     }
 
     @Override
@@ -78,12 +81,40 @@ public class ChatSocket extends TextWebSocketHandler implements WebSocketConfigu
             return;
         }
 
+        if(isCommand(sender, message)){
+            return;
+        }
+
         addMessageToQue(sender.getNickname() + ": " + message.getPayload());
         sendMessageToAll(sender.getNickname() + ": " + message.getPayload());
     }
 
+    private boolean isCommand(UserModel sender, TextMessage message) {
+        if(!message.getPayload().startsWith("/")){
+            return false;
+        }
+
+        String[] commandArgs = message.getPayload().replace("/", "").split(" ");
+        MainCommand mainCommand;
+        switch (commandArgs[0]){
+            case "kick": {
+                mainCommand = new KickCommand(userListService.getUserModels());
+                break;
+            }
+            default: {
+                return false;
+            }
+        }
+        try {
+            mainCommand.executeCommand(sender, Arrays.copyOfRange(commandArgs, 1,  commandArgs.length));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return true;
+    }
+
     private void sendMessageToAll(String message) {
-        userList.forEach(s -> {
+        userListService.getUserModels().forEach(s -> {
             try {
                 s.sendMessage(new TextMessage(message));
             } catch (IOException e) {
@@ -93,7 +124,7 @@ public class ChatSocket extends TextWebSocketHandler implements WebSocketConfigu
     }
 
     private void sendMessageToAllWithoutSender(String message, UserModel sender){
-        userList.stream()
+        userListService.getUserModels().stream()
                 .filter(s -> !s.equals(sender))
                 .forEach(s -> {
                     try {
@@ -107,7 +138,7 @@ public class ChatSocket extends TextWebSocketHandler implements WebSocketConfigu
     //Funkcja szukajaca usera po sesji (pamietamy ze lista jest teraz lista UserModeli a nie sesji)
     //A w metodach wbudowanych w WebSocket przychodzi tylko sesja
     private UserModel findBySession(WebSocketSession webSocketSession){
-         return userList.stream()
+         return  userListService.getUserModels().stream()
                  .filter(s -> s.getUserSession().getId().equals(webSocketSession.getId()))
                  .findAny()
                  .orElseThrow(IllegalStateException::new);
