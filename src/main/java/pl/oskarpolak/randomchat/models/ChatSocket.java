@@ -1,5 +1,6 @@
 package pl.oskarpolak.randomchat.models;
 
+import org.apache.catalina.User;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
@@ -37,12 +38,16 @@ public class ChatSocket extends TextWebSocketHandler implements WebSocketConfigu
                 e.printStackTrace();
             }
         });
+
     }
 
     @Override
     public void afterConnectionClosed(WebSocketSession session, CloseStatus status) throws Exception {
         //tak samo usuwanie z listy odbywa sie po UserModel a nie sesji!!!!!
-        userList.remove(findBySession(session));
+        UserModel userWhoIsExiting = findBySession(session);
+
+        sendMessageToAllWithoutSender(userWhoIsExiting.getNickname() + ", odchodzi z czatu!", userWhoIsExiting);
+        userList.remove(userWhoIsExiting);
     }
 
     @Override
@@ -58,6 +63,9 @@ public class ChatSocket extends TextWebSocketHandler implements WebSocketConfigu
         if(message.getPayload().startsWith("nickname:")){
             if(sender.getNickname() == null){
                  sender.setNickname(message.getPayload().replace("nickname:", ""));
+
+                 sender.sendMessage(new TextMessage("Ustawiłeś swój nick"));
+                 sendMessageToAllWithoutSender(sender.getNickname() + ", dołączył do chatu", sender);
             }else{
                  sender.sendMessage(new TextMessage("Nie możesz zmienić nicku więcej razy!"));
             }
@@ -71,13 +79,29 @@ public class ChatSocket extends TextWebSocketHandler implements WebSocketConfigu
         }
 
         addMessageToQue(sender.getNickname() + ": " + message.getPayload());
+        sendMessageToAll(sender.getNickname() + ": " + message.getPayload());
+    }
+
+    private void sendMessageToAll(String message) {
         userList.forEach(s -> {
             try {
-                s.sendMessage(new TextMessage(sender.getNickname() + ": " + message.getPayload()));
+                s.sendMessage(new TextMessage(message));
             } catch (IOException e) {
                 e.printStackTrace();
             }
         });
+    }
+
+    private void sendMessageToAllWithoutSender(String message, UserModel sender){
+        userList.stream()
+                .filter(s -> !s.equals(sender))
+                .forEach(s -> {
+                    try {
+                        s.sendMessage(new TextMessage(message));
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                });
     }
 
     //Funkcja szukajaca usera po sesji (pamietamy ze lista jest teraz lista UserModeli a nie sesji)
