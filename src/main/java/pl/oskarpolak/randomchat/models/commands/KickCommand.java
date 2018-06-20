@@ -10,6 +10,7 @@ import java.util.Optional;
 
 public class KickCommand extends MainCommand {
 
+
     public KickCommand(List<UserModel> allUsers) {
         super(allUsers);
     }

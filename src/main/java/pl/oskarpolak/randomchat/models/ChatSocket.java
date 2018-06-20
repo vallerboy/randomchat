@@ -9,9 +9,11 @@ import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.config.annotation.WebSocketConfigurer;
 import org.springframework.web.socket.config.annotation.WebSocketHandlerRegistry;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
+import pl.oskarpolak.randomchat.models.commands.BanCommand;
 import pl.oskarpolak.randomchat.models.commands.KickCommand;
 import pl.oskarpolak.randomchat.models.commands.MainCommand;
 import pl.oskarpolak.randomchat.models.commands.OnlineCommand;
+import pl.oskarpolak.randomchat.models.repositories.BanRepository;
 import pl.oskarpolak.randomchat.models.services.UserListService;
 
 import java.io.IOException;
@@ -25,6 +27,9 @@ public class ChatSocket extends TextWebSocketHandler implements WebSocketConfigu
     @Autowired
     UserListService userListService;
 
+    @Autowired
+    BanRepository banRepository;
+
     @Override
     public void registerWebSocketHandlers(WebSocketHandlerRegistry webSocketHandlerRegistry) {
         webSocketHandlerRegistry.addHandler(this, "/room")
@@ -33,8 +38,14 @@ public class ChatSocket extends TextWebSocketHandler implements WebSocketConfigu
 
     @Override
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
-        userListService.addUser(new UserModel(session));
+        if(banRepository.existsByIp(session.getRemoteAddress().getHostName())){
+            session.sendMessage(new TextMessage("Jestes zbanowany papa!"));
 
+            session.close();
+            return;
+        }
+
+        userListService.addUser(new UserModel(session));
         lastTenMessages.forEach(s -> {
             try {
                 session.sendMessage(new TextMessage(s));
@@ -105,6 +116,10 @@ public class ChatSocket extends TextWebSocketHandler implements WebSocketConfigu
             case "online":{
                  mainCommand = new OnlineCommand(userListService.getUserModels());
                  break;
+            }
+            case "ban": {
+                mainCommand = new BanCommand(userListService.getUserModels(), banRepository);
+                break;
             }
             default: {
                 return false;
