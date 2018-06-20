@@ -17,7 +17,7 @@ public class KickCommand extends MainCommand {
     @Override
     public boolean executeCommand(UserModel sender, String... args) throws IOException {
         if(args.length < 1) {
-            sender.sendMessage(new TextMessage("Podałeś za mało argumentów " + info()));
+            sender.sendServerMessage(new TextMessage("Podałeś za mało argumentów " + info()));
             return false;
         }
 
@@ -26,7 +26,7 @@ public class KickCommand extends MainCommand {
                 userToKick.get().getUserSession().close();
                // sender.sendMessage(new TextMessage("Wyrzucono gracza!"));
         }else{
-            sender.sendMessage(new TextMessage("Taki nick nie istnieje!"));
+            sender.sendServerMessage(new TextMessage("Taki nick nie istnieje!"));
         }
         return true;
     }

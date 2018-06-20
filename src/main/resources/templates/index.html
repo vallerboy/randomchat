@@ -39,7 +39,14 @@
         }
 
         websocket.onmessage = function (ev) {
-            messagesArea.innerHTML = messagesArea.innerHTML + "<li>" + ev.data + "</li>";
+           if(!ev.data.startsWith("server:")){
+               messagesArea.innerHTML = messagesArea.innerHTML + "<li>" + ev.data + "</li>";
+           }else{
+               messagesArea.innerHTML = messagesArea.innerHTML + "<li class=\"server_message\">" + ev.data.replace('server:', '') + "</li>";
+           }
+
+
+
             messagesArea.scrollTop = messagesArea.scrollHeight; // automatyczny scroll do dołu
         }
 

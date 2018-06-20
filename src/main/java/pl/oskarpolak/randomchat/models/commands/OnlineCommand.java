@@ -19,7 +19,7 @@ public class OnlineCommand extends MainCommand {
                 .stream()
                 .map(UserModel::getNickname)
                 .collect(Collectors.joining(", ", "Wszyscy online: ", "."));
-        sender.sendMessage(new TextMessage(allUser));
+        sender.sendServerMessage(new TextMessage(allUser));
         return true;
     }
 

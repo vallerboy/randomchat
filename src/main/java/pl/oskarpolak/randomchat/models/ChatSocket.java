@@ -68,17 +68,17 @@ public class ChatSocket extends TextWebSocketHandler implements WebSocketConfigu
             if(sender.getNickname() == null){
                  sender.setNickname(message.getPayload().replace("nickname:", ""));
 
-                 sender.sendMessage(new TextMessage("Ustawiłeś swój nick"));
+                 sender.sendServerMessage(new TextMessage("Ustawiłeś swój nick"));
                  sendMessageToAllWithoutSender(sender.getNickname() + ", dołączył do chatu", sender);
             }else{
-                 sender.sendMessage(new TextMessage("Nie możesz zmienić nicku więcej razy!"));
+                 sender.sendServerMessage(new TextMessage("Nie możesz zmienić nicku więcej razy!"));
             }
             return;
         }
 
         //Nie rozsyłaj wiadoomości usera ktory nie ma nicku
         if(sender.getNickname() == null){
-            sender.sendMessage(new TextMessage("Najpierw ustal nick!"));
+            sender.sendServerMessage(new TextMessage("Najpierw ustal nick!"));
             return;
         }
 
