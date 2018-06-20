@@ -11,6 +11,7 @@ import org.springframework.web.socket.config.annotation.WebSocketHandlerRegistry
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 import pl.oskarpolak.randomchat.models.commands.KickCommand;
 import pl.oskarpolak.randomchat.models.commands.MainCommand;
+import pl.oskarpolak.randomchat.models.commands.OnlineCommand;
 import pl.oskarpolak.randomchat.models.services.UserListService;
 
 import java.io.IOException;
@@ -100,6 +101,10 @@ public class ChatSocket extends TextWebSocketHandler implements WebSocketConfigu
             case "kick": {
                 mainCommand = new KickCommand(userListService.getUserModels());
                 break;
+            }
+            case "online":{
+                 mainCommand = new OnlineCommand(userListService.getUserModels());
+                 break;
             }
             default: {
                 return false;
